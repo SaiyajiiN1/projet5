@@ -24,7 +24,7 @@ class OpenfoodfactsClient:
             raise ValueError('lang supports values "fr", "en" and world"')
         self.url = f"https://{lang}.openfoodfacts.org/cgi/search.pl"
 
-    def get_procuts_by_popularity(self, page_size=100, numbe_of_pages=1):
+    def get_products_by_popularity(self, page_size=100, number_of_pages=1):
         """Downloads products from openfoodfacts REST API in order of popularity
 
         Args:
@@ -58,7 +58,7 @@ class OpenfoodfactsClient:
                 "page": page
             }
             try:
-                reponse = requests.get(self.url, params=params)
+                response = requests.get(self.url, params=params)
                 response.raise_for_status()
             except requests.exceptions.Request:
                 return []  # In the event of an error, an empty list is returned
