@@ -200,6 +200,7 @@ class ProductManager(BaseManager):
                     FROM {models.ProductCategory.table}
                     WHERE {models.Product.table}_id = %(id)s
                 )
+            GROUP BY id
             {self._format_order_by(order_by)}
             {self._format_limit(limit)}
             """,
@@ -312,7 +313,7 @@ class ProductCategoryManager(BaseManager):
         """Save an instance of ProductCategory in database."""
         cursor = db.cursor()
         cursor.execute(
-            f"""INSERT INTO {self.table} (product_id, category_id)
+            f"""INSERT IGNORE INTO {self.table} (product_id, category_id)
             VALUES (%(product_id)s, %(category_id)s)
             """,
             vars(instance),
@@ -409,7 +410,7 @@ class ProductStoreManager(BaseManager):
         """Save an instance of ProductStore in database."""
         cursor = db.cursor()
         cursor.execute(
-            f"""INSERT INTO {self.table} (product_id, store_id)
+            f"""INSERT IGNORE INTO {self.table} (product_id, store_id)
             VALUES (%(product_id)s, %(store_id)s)
             """,
             vars(instance),
@@ -457,7 +458,7 @@ class FavoriteManager(BaseManager):
         """Save an instance of Favorite in the database."""
         cursor = db.cursor()
         cursor.execute(
-            f"""INSERT INTO {self.table} (product_id, substitute_id)
+            f"""INSERT IGNORE INTO {self.table} (product_id, substitute_id)
             VALUES (%(product_id)s, %(substitute_id)s)
             """,
             vars(instance),

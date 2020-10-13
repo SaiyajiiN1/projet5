@@ -24,41 +24,56 @@ class Product:
         self.nutriscore = nutriscore
         self.description = description
 
-    def get_categories(self):
+    def get_categories(self, order_by=None, limit=None):
         """Retrieves the categories associated with the product."""
-        return Category.manager.get_categories_by_product(self)
+        return Category.manager.get_categories_by_product(
+            self, order_by=order_by, limit=limit
+        )
 
-    def get_stores(self):
+    def get_stores(self, order_by=None, limit=None):
         """Retrieves the stores associated with the product."""
-        return Store.manager.get_stores_by_product(self)
+        return Product.manager.get_substitutes_by_product(
+            self, order_by=order_by, limit=limit
+        )
 
-    def get_substitutes(self):
+    def get_substitutes(self, order_by=None, limit=None):
         """Retrieves the substitutes associated with the product."""
         return Product.manager.get_substitutes_by_product(self)
 
-    def get_products(self):
+    def get_products(self, order_by=None, limit=None):
         """Retrieves the products associated with the substitute."""
-        return Product.manager.get_products_by_substitute(self)
+        return Product.manager.get_products_by_substitute(
+            self, order_by=order_by, limit=limit
+        )
 
     def add_categories(self, *categories):
         """Adds one or more categories to the product."""
-        ProductCategory.manager.add_categories_to_product(self)
+        ProductCategory.manager.add_categories_to_product(self, *categories)
 
     def add_stores(self, *stores):
         """Adds one or more stores to the product."""
-        ProductStore.manager.add_stores_to_product(self)
+        ProductStore.manager.add_stores_to_product(self, *stores)
 
     def add_substitutes(self, *substitutes):
         """Registers substitutes associated with a product."""
-        Favorite.manager.add_substitutes_to_product(self)
+        Favorite.manager.add_substitutes_to_product(self, *substitutes)
 
     def add_products(self, *products):
         """Registers products associated with a substitute."""
-        Favorite.manager.add_products_to_substitute(self)
+        Favorite.manager.add_products_to_substitute(self, *products)
 
     def __str__(self):
         """Returns a textual representation of the product."""
         return f"{self.name.capitalize()} ({self.nutriscore.upper()})"
+
+    def format_info(self):
+        return (
+            f"Code: {self.id}\n"
+            f"Nom: {self.name.capitalize()}\n"
+            f"URL: {self.url}\n"
+            f"Nutriscore: {self.nutriscore.upper()}\n"
+            f"Description: {self.description}\n"
+        )
 
 
 class Category:
@@ -75,10 +90,16 @@ class Category:
         self.id = id
         self.name = name[:100]
 
-    def get_products(self):
+    def get_products(self, order_by=None, limit=None):
         """Retrieves the products associated with the category in the
         database."""
-        return Product.manager.get_products_by_category(self)
+        return Product.manager.get_products_by_category(
+            self, order_by=order_by, limit=limit
+        )
+
+    def add_products(self, *products):
+        """Add one or more products to the category."""
+        ProductCategory.manager.add_products_to_category(self, *products)
 
     def __str__(self):
         """Returns the textual representation of the category."""
@@ -101,9 +122,15 @@ class Store:
         self.id = id
         self.name = name[:100]
 
-    def get_products(self):
+    def get_products(self, order_by=None, limit=None):
         """Collects in base the products sold in this store."""
-        return Product.manager.get_products_by_store(self)
+        return Product.manager.get_products_by_store(
+            self, order_by=order_by, limit=limit
+        )
+
+    def add_products(self, *products):
+        """Add one or more products to the store."""
+        ProductStore.manager.add_products_to_store(self, *products)
 
     def __str__(self):
         """Returns the textual representation of a store."""
