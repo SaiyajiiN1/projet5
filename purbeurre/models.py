@@ -56,6 +56,10 @@ class Product:
         """Registers products associated with a substitute."""
         Favorite.manager.add_products_to_substitute(self)
 
+    def __str__(self):
+        """Returns a textual representation of the product."""
+        return f"{self.name.capitalize()} ({self.nutriscore.upper()})"
+
 
 class Category:
     """Description of product category within the food base."""
@@ -75,6 +79,10 @@ class Category:
         """Retrieves the products associated with the category in the
         database."""
         return Product.manager.get_products_by_category(self)
+
+    def __str__(self):
+        """Returns the textual representation of the category."""
+        return f"{self.name}"
 
 
 class Store:
@@ -96,6 +104,10 @@ class Store:
     def get_products(self):
         """Collects in base the products sold in this store."""
         return Product.manager.get_products_by_store(self)
+
+    def __str__(self):
+        """Returns the textual representation of a store."""
+        return f"{self.name}"
 
 
 class ProductCategory:
@@ -155,6 +167,21 @@ class Favorite:
         )
         self.substitute_id = (
             substitute.id if isinstance(substitute, Product) else substitute
+        )
+
+    def get_product(self):
+        """Retrieves the product associated with the favorite.""""
+        return Product.manager.get_by_id(self.product_id)
+
+    def get_substitute(self):
+        """Retrieves the substitute associated with the favorite."""
+        return Product.manager.get_by_id(self.substitute_id)
+
+    def __str__(self):
+        """Returns the textual representation of a favorite."""
+        return (
+            f"{self.get_product()} Can be replaced by "
+            f"{self.get_substitute()}"
         )
 
 

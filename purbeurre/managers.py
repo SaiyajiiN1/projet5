@@ -177,6 +177,38 @@ class ProductManager(BaseManager):
         cursor.close()
         return results
 
+    def find_substitutes_for_product(
+        self, product, order_by=["common_categories_number DESC"], limit=None
+    ):
+        """Look for healthier substitutes for a product."""
+        cursor = db.cursor()
+        cursor.execute(
+            f"""SELECT
+                id,
+                name,
+                url,
+                nutriscore,
+                description,
+                COUNT(id) as common_categories_number
+            FROM {models.Product.table}
+            JOIN {models.ProductCategory.table}
+                ON {models.Product.table}_id = id
+            WHERE id != %(id)s
+                AND nutriscore < %(nutriscore)s
+                AND {models.Category.table}_id IN (
+                    SELECT {models.Category.table}_id
+                    FROM {models.ProductCategory.table}
+                    WHERE {models.Product.table}_id = %(id)s
+                )
+            {self._format_order_by(order_by)}
+            {self._format_limit(limit)}
+            """,
+            vars(product),
+        )
+        results = [self.model(*row[:-1]) for row in cursor]
+        cursor.close()
+        return results
+
 
 class CategoryManager(BaseManager):
     """Manager responsible for managing the Category model."""
@@ -220,6 +252,35 @@ class CategoryManager(BaseManager):
             f"{self._format_order_by(order_by)}"
             f"{self._format_limit(limit)}",
             vars(product),
+        )
+        results = [self.model(*row) for row in cursor]
+        cursor.close()
+        return results
+
+    def get_by_names(self, *names):
+        """Retrieves based on categories by name."""
+        cursor = db.cursor()
+        cursor.execute(
+            f"SELECT * FROM {self.table} "
+            f"WHERE name IN ({', '.join('%s' for name in names)}) ",
+            tuple(names),
+        )
+        results = [self.model(*row) for row in cursor]
+        cursor.close()
+        return results
+
+    def get_with_excluded_names(self, *names, **kwargs):
+        """Retrieve categories whose name is not in names."""
+        order_by = kwargs.get('order_by')
+        limit = kwargs.get('limit')
+
+        cursor = db.cursor()
+        cursor.execute(
+            f"SELECT * FROM {self.table} "
+            f"WHERE name NOT IN ({', '.join('%s' for name in names)}) "
+            f"{self._format_order_by(order_by)}"
+            f"{self._format_limit(limit)}",
+            tuple(names),
         )
         results = [self.model(*row) for row in cursor]
         cursor.close()
