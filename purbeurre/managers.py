@@ -1,26 +1,19 @@
-from purbeurre.database import db
+from purbeurre.database import db, register_manager
 from purbeurre import models
 
 
 class BaseManager:
     """Manager at the base of the construction of all managers."""
 
-    def __init__(self, modelname, tablename):
-        """Initializes a new instance of BaseManager."""
-        self._model = modelname
-        self.table = tablename
-        self.create_table()
-
-    @property
-    def model(self):
-        """Model used by the manager."""
-        if isinstance(self._model, str):
-            self._model = getattr(models, self._model)
-        return self._model
+    def __init__(self, model):
+        """Initialise une nouvelle instance de BaseManager."""
+        self.model = model
+        self.table = model.table
+        register_manager(self)
 
     def create(self, **kwargs):
-        """Creates a new instance of the model from the arguments and
-        saves the model.
+        """Create a new instance of the model from the arguments and
+        save the model.
         """
         instance = self.model(**kwargs)
         self.save(instance)
@@ -33,16 +26,39 @@ class BaseManager:
         db.commit()
         cursor.close()
 
-    def get_all(self):
+    def drop_table(self):
+        """Delete your table itself."""
+        cursor = db.cursor()
+        cursor.execute(f"DROP TABLE IF EXISTS {self.table}")
+        db.commit()
+        cursor.close()
+
+    def _format_order_by(self, order_by):
+        if not isinstance(order_by, list) or not order_by:
+            return ""
+        else:
+            return f" ORDER_BY {', '.join(order_by)}"
+
+    def _format_limit(self, limit):
+        if not isinstance(limit, list) or not limit:
+            return ""
+        else:
+            return f" LIMIT {', '.join(limit)}"
+
+    def get_all(self, order_by=None, limit=None):
         """Retrieves all the instances of the model in the database."""
         cursor = db.cursor()
-        cursor.execute(f"SELECT * FROM {self.table}")
+        cursor.execute(
+            f"SELECT * FROM {self.table}"
+            f"{self._format_order_by(order_by)}"
+            f"{self._format_limit(limit)}"
+        )
         results = [self.model(*row) for row in cursor]
         cursor.close()
         return results
 
     def get_by_id(self, id):
-        """Retrieves an instance of the model in relation to its id."""
+        """Retrieves in base an instance of the model compared to its id."""
         cursor = db.cursor()
         cursor.execute(
             f"SELECT * FROM {self.table} WHERE id = %(id)s", {"id": id}
@@ -62,8 +78,8 @@ class ProductManager(BaseManager):
         cursor = db.cursor()
         cursor.execute(
             f"""CREATE TABLE IF NOT EXISTS {self.table} (
-                id INT PRIMARY KEY,
-                name VARCHAR(150) NOT NULL,
+                id BIGINT PRIMARY KEY,
+                name VARCHAR(200) NOT NULL,
                 url VARCHAR(255) NOT NULL,
                 nutriscore VARCHAR(1) NOT NULL,
                 description TEXT
@@ -72,7 +88,7 @@ class ProductManager(BaseManager):
         cursor.close()
 
     def save(self, instance):
-        """Save an instance of Product in the database."""
+        """Save an instance of Product in database."""
         cursor = db.cursor()
         cursor.execute(
             f"""INSERT INTO {self.table} (
@@ -84,6 +100,81 @@ class ProductManager(BaseManager):
         )
         db.commit()
         cursor.close()
+
+    def get_products_by_category(self, category, order_by=None, limit=None):
+        """Retrieves all the products associated with a category in the
+        database."""
+        cursor = db.cursor()
+        cursor.execute(
+            f"SELECT p.id, p.name, p.url, p.nutriscore, p.description "
+            f"FROM {self.table} AS p "
+            f"JOIN {models.ProductCategory.table} AS asso "
+            f"ON asso.{self.table}_id = p.id "
+            f"WHERE asso.{models.Category.table}_id = %(id)s"
+            f"{self._format_order_by(order_by)}"
+            f"{self._format_limit(limit)}",
+            vars(category),
+        )
+        results = [self.model(*row) for row in cursor]
+        cursor.close()
+        return results
+
+    def get_products_by_store(self, store, order_by=None, limit=None):
+        """Retrieves all the products associated with a store in the
+        database."""
+        cursor = db.cursor()
+        cursor.execute(
+            f"SELECT p.id, p.name, p.url, p.nutriscore, p.description "
+            f"FROM {self.table} AS p "
+            f"JOIN {models.ProductStore.table} AS asso "
+            f"ON asso.{self.table}_id = p.id "
+            f"WHERE asso.{models.Store.table}_id = %(id)s"
+            f"{self._format_order_by(order_by)}"
+            f"{self._format_limit(limit)}",
+            vars(store),
+        )
+        results = [self.model(*row) for row in cursor]
+        cursor.close()
+        return results
+
+    def get_substitutes_by_product(self, product, order_by=None, limit=None):
+        """Retrieves all the substitutes associated with a product in the
+        database."""
+        cursor = db.cursor()
+        cursor.execute(
+            f"SELECT p.id, p.name, p.url, p.nutriscore, p.description "
+            f"FROM {self.table} AS p "
+            f"JOIN {models.Favorite.table} AS f "
+            f"ON f.substitute_id = p.id "
+            f"WHERE f.{models.Product.table}_id = %(id)s"
+            f"{self._format_order_by(order_by)}"
+            f"{self._format_limit(limit)}",
+            vars(product),
+        )
+        results = [self.model(*row) for row in cursor]
+        cursor.close()
+        return results
+
+    def get_products_by_substitute(
+        self, substitute, order_by=None, limit=None
+    ):
+        """Retrieves in base all the products associated with a product as
+        that substitute.
+        """
+        cursor = db.cursor()
+        cursor.execute(
+            f"SELECT p.id, p.name, p.url, p.nutriscore, p.description "
+            f"FROM {self.table} AS p "
+            f"JOIN {models.Favorite.table} AS f "
+            f"ON f.{self.table}_id = p.id "
+            f"WHERE f.substitute_id = %(id)s"
+            f"{self._format_order_by(order_by)}"
+            f"{self._format_limit(limit)}",
+            vars(substitute),
+        )
+        results = [self.model(*row) for row in cursor]
+        cursor.close()
+        return results
 
 
 class CategoryManager(BaseManager):
@@ -115,21 +206,41 @@ class CategoryManager(BaseManager):
         db.commit()
         cursor.close()
 
+    def get_categories_by_product(self, product, order_by=None, limit=None):
+        """Retrieves all the categories associated with a product in the
+        database."""
+        cursor = db.cursor()
+        cursor.execute(
+            f"SELECT c.id, c.name "
+            f"FROM {self.table} AS c "
+            f"JOIN {models.ProductCategory.table} AS asso "
+            f"ON asso.{self.table}_id = c.id "
+            f"WHERE asso.{models.Product.table}_id = %(id)s"
+            f"{self._format_order_by(order_by)}"
+            f"{self._format_limit(limit)}",
+            vars(product),
+        )
+        results = [self.model(*row) for row in cursor]
+        cursor.close()
+        return results
+
 
 class ProductCategoryManager(BaseManager):
     """Manager responsible for managing the ProductCategory model."""
 
     def create_table(self):
-        """Creates the association table associated with the
-        ProductCategory model."""
+        """Creates the association table associated with the ProductCategory
+        model."""
         cursor = db.cursor()
         cursor.execute(
             f"""CREATE TABLE IF NOT EXISTS {self.table} (
-                product_id INT,
-                category_id INT,
-                PRIMARY KEY(product_id, category_id),
-                FOREIGN KEY (product_id) REFERENCES product(id),
-                FOREIGN KEY (category_id) REFERENCES category(id)
+                {models.Product.table}_id BIGINT,
+                {models.Category.table}_id INT,
+                PRIMARY KEY({models.Product.table}_id, category_id),
+                FOREIGN KEY ({models.Product.table}_id)
+                    REFERENCES {models.Product.table}(id),
+                FOREIGN KEY ({models.Category.table}_id)
+                    REFERENCES {models.Category.table}(id)
             )
             """
         )
@@ -152,6 +263,16 @@ class ProductCategoryManager(BaseManager):
             "get_by_id() is not supported on ProductCategory"
         )
 
+    def add_categories_to_product(self, product, *categories):
+        """Add categories to a product."""
+        for category in categories:
+            self.create(product=product, category=category)
+
+    def add_products_to_category(self, category, *products):
+        """Adds products to a category."""
+        for product in products:
+            self.create(product=product, category=category)
+
 
 class StoreManager(BaseManager):
     """Manager responsible for managing the Store model."""
@@ -169,7 +290,7 @@ class StoreManager(BaseManager):
         cursor.close()
 
     def save(self, instance):
-        """Save a Store instance in database."""
+        """Save a Store instance in the database."""
         cursor = db.cursor()
         cursor.execute(
             f"""INSERT INTO {self.table} (id, name)
@@ -182,20 +303,41 @@ class StoreManager(BaseManager):
         db.commit()
         cursor.close()
 
+    def get_stores_by_product(self, product, order_by=None, limit=None):
+        """Retrieves all the stores associated with a product in the
+        database."""
+        cursor = db.cursor()
+        cursor.execute(
+            f"SELECT s.id, s.name "
+            f"FROM {self.table} AS s "
+            f"JOIN {models.ProductStore.table} AS asso "
+            f"ON asso.{self.table}_id = s.id "
+            f"WHERE asso.{models.Product.table}_id = %(id)s"
+            f"{self._format_order_by(order_by)}"
+            f"{self._format_limit(limit)}",
+            vars(product),
+        )
+        results = [self.model(*row) for row in cursor]
+        cursor.close()
+        return results
+
 
 class ProductStoreManager(BaseManager):
     """Manager responsible for managing the ProductStore model."""
 
     def create_table(self):
-        """Creates the association table associated with the ProductStore model."""
+        """Creates the association table associated with the
+        ProductStore model."""
         cursor = db.cursor()
         cursor.execute(
             f"""CREATE TABLE IF NOT EXISTS {self.table} (
-                product_id INT,
-                store_id INT,
-                PRIMARY KEY(product_id, store_id),
-                FOREIGN KEY (product_id) REFERENCES product(id),
-                FOREIGN KEY (store_id) REFERENCES store(id)
+                {models.Product.table}_id BIGINT,
+                {models.Store.table}_id INT,
+                PRIMARY KEY({models.Product.table}_id, store_id),
+                FOREIGN KEY ({models.Product.table}_id)
+                    REFERENCES {models.Product.table}(id),
+                FOREIGN KEY ({models.Store.table}_id)
+                    REFERENCES {models.Store.table}(id)
             )
             """
         )
@@ -218,6 +360,16 @@ class ProductStoreManager(BaseManager):
             "get_by_id() is not supported on ProductStore"
         )
 
+    def add_stores_to_product(self, product, *stores):
+        """Adds stores to a product."""
+        for store in stores:
+            self.create(product=product, store=store)
+
+    def add_products_to_store(self, store, *products):
+        """Adds products to a store."""
+        for product in products:
+            self.create(product=product, store=store)
+
 
 class FavoriteManager(BaseManager):
     """Manager responsible for managing the Favorite model."""
@@ -227,11 +379,13 @@ class FavoriteManager(BaseManager):
         cursor = db.cursor()
         cursor.execute(
             f"""CREATE TABLE IF NOT EXISTS {self.table} (
-                product_id INT,
-                substitute_id INT,
-                PRIMARY KEY(product_id, substitute_id),
-                FOREIGN KEY (substitute_id) REFERENCES product(id),
-                FOREIGN KEY (substitute_id) REFERENCES product(id)
+                {models.Product.table}_id BIGINT,
+                substitute_id BIGINT,
+                PRIMARY KEY({models.Product.table}_id, substitute_id),
+                FOREIGN KEY ({models.Product.table}_id)
+                    REFERENCES {models.Product.table}(id),
+                FOREIGN KEY (substitute_id)
+                    REFERENCES {models.Product.table}(id)
             )
             """
         )
@@ -251,3 +405,13 @@ class FavoriteManager(BaseManager):
 
     def get_by_id(self, product_id, category_id):
         raise NotImplementedError("get_by_id() is not supported on Favorite")
+
+    def add_products_to_substitute(self, substitute, *products):
+        """Adds products to a substitute."""
+        for product in products:
+            self.create(product=product, substitute=substitute)
+
+    def add_substitutes_to_product(self, product, *substitutes):
+        """Adds substitutes to a product."""
+        for substitute in substitutes:
+            self.create(product=product, substitute=substitute)

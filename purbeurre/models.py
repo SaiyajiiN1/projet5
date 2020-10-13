@@ -4,100 +4,164 @@ from purbeurre import managers
 class Product:
     """Describes a food product."""
 
-    manager = managers.ProductManager("Product", "product")
+    table = "product"
 
     def __init__(
-        self, id=None, name=None, nutriscore=None, url=None, description=None
+        self, id=None, name=None, url=None, nutriscore=None, description=None
     ):
         """Builder.
-         Args:
-             id (int): barcode of the product
-             name (str): full name of the product
-             nutriscore (str): letter representing the nutritional score
-             url (str): url to the product page on the site used for the
-             download.
-             description (str): full description of the product
+        Args:
+            id (int): product barcode
+            name (str): full product name
+            nutriscore (str): letter representing nutritional score
+            url (str): url to the product page on the site used for the
+            download.
+            description (str): full product description
         """
         self.id = id
-        self.name = name
-        self.nutriscore = nutriscore
+        self.name = name[:200]
         self.url = url
+        self.nutriscore = nutriscore
         self.description = description
+
+    def get_categories(self):
+        """Retrieves the categories associated with the product."""
+        return Category.manager.get_categories_by_product(self)
+
+    def get_stores(self):
+        """Retrieves the stores associated with the product."""
+        return Store.manager.get_stores_by_product(self)
+
+    def get_substitutes(self):
+        """Retrieves the substitutes associated with the product."""
+        return Product.manager.get_substitutes_by_product(self)
+
+    def get_products(self):
+        """Retrieves the products associated with the substitute."""
+        return Product.manager.get_products_by_substitute(self)
+
+    def add_categories(self, *categories):
+        """Adds one or more categories to the product."""
+        ProductCategory.manager.add_categories_to_product(self)
+
+    def add_stores(self, *stores):
+        """Adds one or more stores to the product."""
+        ProductStore.manager.add_stores_to_product(self)
+
+    def add_substitutes(self, *substitutes):
+        """Registers substitutes associated with a product."""
+        Favorite.manager.add_substitutes_to_product(self)
+
+    def add_products(self, *products):
+        """Registers products associated with a substitute."""
+        Favorite.manager.add_products_to_substitute(self)
 
 
 class Category:
     """Description of product category within the food base."""
 
-    manager = managers.CategoryManager("Category", "category")
+    table = "category"
 
     def __init__(self, id=None, name=None):
         """Builder.
-         Args:
-             id (int): unique and auto-generated identifier for the category
-             name (str): name of the category
+        Args:
+            id (int): unique and self-generated identifier for the category
+            name (str): category name
         """
         self.id = id
-        self.name = name
+        self.name = name[:100]
+
+    def get_products(self):
+        """Retrieves the products associated with the category in the
+        database."""
+        return Product.manager.get_products_by_category(self)
 
 
 class Store:
-    """Describes a store in which database products can be purchased.
+    """Describes a store where products in the database can be
+    be purchased.
     """
 
-    manager = managers.StoreManager("Store", "store")
+    table = "store"
 
     def __init__(self, id=None, name=None):
         """Builder.
-         Args:
-             id (int): unique and auto-generated identifier for the store
-             name (str): store name
+        Args:
+            id (int): unique and self-generated identifier for the store
+            name (str): name of store
         """
         self.id = id
-        self.name = name
+        self.name = name[:100]
+
+    def get_products(self):
+        """Collects in base the products sold in this store."""
+        return Product.manager.get_products_by_store(self)
 
 
 class ProductCategory:
     """Describes an association between products and categories."""
 
-    manager = managers.ProductCategoryManager(
-        "ProductCategory", "product_category"
-    )
+    table = "product_category"
 
-    def __init__(self, product_id, category_id):
-        """Initialise une nouvelle association entre produit et catégorie.
+    def __init__(self, product=None, category=None):
+        """Initialize a new association between product and category.
         Args:
-            product_id (int): product id
-            category_id (int): category id
+            product (Product): instance of the product or its identifier
+            category (Category): instance of the category or its identifier
         """
-        self.product_id = product_id
-        self.category_id = category_id
+        self.product_id = (
+            product.id if isinstance(product, Product) else product
+        )
+        self.category_id = (
+            category.id if isinstance(category, Category) else category
+        )
 
 
 class ProductStore:
     """Describes an association between products and stores."""
 
-    manager = managers.ProductStoreManager("ProductStore", "product_store")
+    table = "product_store"
 
-    def __init__(self, product_id, store_id):
-        """Initialise une nouvelle association entre produit et magasin.
+    def __init__(self, product=None, store=None):
+        """Initializes a new association between product and store.
         Args:
-            product_id (int): product id
-            store_id (int): store id
+            product (Product): instance of the product or its identifier
+            store (Store): store instance or its identifier
         """
-        self.product_id = product_id
-        self.store_id = store_id
+        self.product_id = (
+            product.id if isinstance(product, Product) else product
+        )
+        self.store_id = store.id if isinstance(store, Store) else store
 
 
 class Favorite:
-    """Describes a recorded relationship between a product and its substitute."""
+    """Describes a recorded relationship between a product and its
+    substitute."""
 
-    manager = managers.FavoriteManager("Favorite", "favorite")
+    table = "favorite"
 
-    def __init__(self, product_id, substitute_id):
+    def __init__(
+        self,
+        product=None,
+        substitute=None,
+    ):
         """Initializes a new relationship between a product and its substitute.
         Args:
-            product_id (int): product id
-            substitute_id (int): healthier substitute identifier
+            product (Product): instance of the product or its identifier
+            substitute (Product): substitute instance or its identifier
         """
-        self.product_id = product_id
-        self.substitute_id = substitute_id
+        self.product_id = (
+            product.id if isinstance(product, Product) else product
+        )
+        self.substitute_id = (
+            substitute.id if isinstance(substitute, Product) else substitute
+        )
+
+
+# Definition of managers for each model
+Product.manager = managers.ProductManager(Product)
+Category.manager = managers.CategoryManager(Category)
+Store.manager = managers.StoreManager(Store)
+ProductCategory.manager = managers.ProductCategoryManager(ProductCategory)
+ProductStore.manager = managers.ProductStoreManager(ProductStore)
+Favorite.manager = managers.FavoriteManager(Favorite)
