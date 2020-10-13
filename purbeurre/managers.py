@@ -37,7 +37,8 @@ class BaseManager:
         if not isinstance(order_by, list) or not order_by:
             return ""
         else:
-            return f" ORDER_BY {', '.join(order_by)}"
+            limit = [str(number) for number in limit]
+            return f" ORDER BY {', '.join(order_by)}"
 
     def _format_limit(self, limit):
         if not isinstance(limit, list) or not limit:
@@ -106,11 +107,11 @@ class ProductManager(BaseManager):
         database."""
         cursor = db.cursor()
         cursor.execute(
-            f"SELECT p.id, p.name, p.url, p.nutriscore, p.description "
-            f"FROM {self.table} AS p "
-            f"JOIN {models.ProductCategory.table} AS asso "
-            f"ON asso.{self.table}_id = p.id "
-            f"WHERE asso.{models.Category.table}_id = %(id)s"
+            f"SELECT id, name, url, nutriscore, description "
+            f"FROM {self.table} "
+            f"JOIN {models.ProductCategory.table} "
+            f"    ON {self.table}_id = id "
+            f"WHERE {models.Category.table}_id = %(id)s"
             f"{self._format_order_by(order_by)}"
             f"{self._format_limit(limit)}",
             vars(category),
@@ -124,11 +125,11 @@ class ProductManager(BaseManager):
         database."""
         cursor = db.cursor()
         cursor.execute(
-            f"SELECT p.id, p.name, p.url, p.nutriscore, p.description "
-            f"FROM {self.table} AS p "
-            f"JOIN {models.ProductStore.table} AS asso "
-            f"ON asso.{self.table}_id = p.id "
-            f"WHERE asso.{models.Store.table}_id = %(id)s"
+            f"SELECT id, name, url, nutriscore, description "
+            f"FROM {self.table} "
+            f"JOIN {models.ProductStore.table} "
+            f"    ON {self.table}_id = id "
+            f"WHERE {models.Store.table}_id = %(id)s"
             f"{self._format_order_by(order_by)}"
             f"{self._format_limit(limit)}",
             vars(store),
@@ -142,11 +143,11 @@ class ProductManager(BaseManager):
         database."""
         cursor = db.cursor()
         cursor.execute(
-            f"SELECT p.id, p.name, p.url, p.nutriscore, p.description "
-            f"FROM {self.table} AS p "
-            f"JOIN {models.Favorite.table} AS f "
-            f"ON f.substitute_id = p.id "
-            f"WHERE f.{models.Product.table}_id = %(id)s"
+            f"SELECT id, name, url, nutriscore, description "
+            f"FROM {self.table} "
+            f"JOIN {models.Favorite.table} "
+            f"    ON substitute_id = id "
+            f"WHERE {models.Product.table}_id = %(id)s"
             f"{self._format_order_by(order_by)}"
             f"{self._format_limit(limit)}",
             vars(product),
@@ -163,11 +164,11 @@ class ProductManager(BaseManager):
         """
         cursor = db.cursor()
         cursor.execute(
-            f"SELECT p.id, p.name, p.url, p.nutriscore, p.description "
-            f"FROM {self.table} AS p "
-            f"JOIN {models.Favorite.table} AS f "
-            f"ON f.{self.table}_id = p.id "
-            f"WHERE f.substitute_id = %(id)s"
+            f"SELECT id, name, url, nutriscore, description "
+            f"FROM {self.table} "
+            f"JOIN {models.Favorite.table}  "
+            f"    ON {self.table}_id = id "
+            f"WHERE substitute_id = %(id)s"
             f"{self._format_order_by(order_by)}"
             f"{self._format_limit(limit)}",
             vars(substitute),
@@ -211,11 +212,11 @@ class CategoryManager(BaseManager):
         database."""
         cursor = db.cursor()
         cursor.execute(
-            f"SELECT c.id, c.name "
-            f"FROM {self.table} AS c "
-            f"JOIN {models.ProductCategory.table} AS asso "
-            f"ON asso.{self.table}_id = c.id "
-            f"WHERE asso.{models.Product.table}_id = %(id)s"
+            f"SELECT id, name "
+            f"FROM {self.table} "
+            f"JOIN {models.ProductCategory.table} "
+            f"    ON {self.table}_id = id "
+            f"WHERE {models.Product.table}_id = %(id)s"
             f"{self._format_order_by(order_by)}"
             f"{self._format_limit(limit)}",
             vars(product),
@@ -308,11 +309,11 @@ class StoreManager(BaseManager):
         database."""
         cursor = db.cursor()
         cursor.execute(
-            f"SELECT s.id, s.name "
-            f"FROM {self.table} AS s "
-            f"JOIN {models.ProductStore.table} AS asso "
-            f"ON asso.{self.table}_id = s.id "
-            f"WHERE asso.{models.Product.table}_id = %(id)s"
+            f"SELECT id, name "
+            f"FROM {self.table} "
+            f"JOIN {models.ProductStore.table} "
+            f"    ON {self.table}_id = id "
+            f"WHERE {models.Product.table}_id = %(id)s"
             f"{self._format_order_by(order_by)}"
             f"{self._format_limit(limit)}",
             vars(product),
