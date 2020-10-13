@@ -1,6 +1,3 @@
-from typing import Collection
-"""This module is responsible for establishing the connection with the database."""
-
 from mysql.connector import MySQLConnection
 
 import settings
