@@ -19,3 +19,5 @@ The application can be installed by following the following steps:
 3. Install dependencies using the `pipenv install`
 4. Create a user and a database on mysql
 5. Modify the `settings.py` file and indicate the user name, the password as well as the name of the database in the constants provided for this purpose.
+6. For launch app first start virtual environement `pipenv shell`
+7. Install app `python3 install.py` and start app `python3 -m purbeurre`
