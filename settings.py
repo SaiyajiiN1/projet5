@@ -10,4 +10,4 @@ DB_COLLATION = 'utf8mb4_unicode_ci'
 PRODUCT_CLIENT_PAGE_SIZE = 1000
 PRODUCT_CLIENT_NUMBER_OF_PAGES = 10
 
-CATEGORIES = ['biscuits au chocolat', 'pâtes à tartiner']
+CATEGORIES = ['biscuits au chocolat', 'pâtes à tartiner', 'gratins de poisson']

@@ -6,7 +6,7 @@ class BaseManager:
     """Manager at the base of the construction of all managers."""
 
     def __init__(self, model):
-        """Initialise une nouvelle instance de BaseManager."""
+        """Initializes a new instance of BaseManager."""
         self.model = model
         self.table = model.table
         register_manager(self)
@@ -37,13 +37,13 @@ class BaseManager:
         if not isinstance(order_by, list) or not order_by:
             return ""
         else:
-            limit = [str(number) for number in limit]
             return f" ORDER BY {', '.join(order_by)}"
 
     def _format_limit(self, limit):
         if not isinstance(limit, list) or not limit:
             return ""
         else:
+            limit = [str(number) for number in limit]
             return f" LIMIT {', '.join(limit)}"
 
     def get_all(self, order_by=None, limit=None):
@@ -89,7 +89,7 @@ class ProductManager(BaseManager):
         cursor.close()
 
     def save(self, instance):
-        """Save an instance of Product in database."""
+        """Save an instance of Product in the database."""
         cursor = db.cursor()
         cursor.execute(
             f"""INSERT INTO {self.table} (
@@ -103,8 +103,7 @@ class ProductManager(BaseManager):
         cursor.close()
 
     def get_products_by_category(self, category, order_by=None, limit=None):
-        """Retrieves all the products associated with a category in the
-        database."""
+        """Retrieves all the products associated with a category in the database."""
         cursor = db.cursor()
         cursor.execute(
             f"SELECT id, name, url, nutriscore, description "
@@ -121,14 +120,13 @@ class ProductManager(BaseManager):
         return results
 
     def get_products_by_store(self, store, order_by=None, limit=None):
-        """Retrieves all the products associated with a store in the
-        database."""
+        """Retrieves all the products associated with a store in the database."""
         cursor = db.cursor()
         cursor.execute(
             f"SELECT id, name, url, nutriscore, description "
             f"FROM {self.table} "
             f"JOIN {models.ProductStore.table} "
-            f"    ON {self.table}_id = id "
+            f"     ON {self.table}_id = id "
             f"WHERE {models.Store.table}_id = %(id)s"
             f"{self._format_order_by(order_by)}"
             f"{self._format_limit(limit)}",
@@ -139,8 +137,7 @@ class ProductManager(BaseManager):
         return results
 
     def get_substitutes_by_product(self, product, order_by=None, limit=None):
-        """Retrieves all the substitutes associated with a product in the
-        database."""
+        """Retrieves all the substitutes associated with a product in the database."""
         cursor = db.cursor()
         cursor.execute(
             f"SELECT id, name, url, nutriscore, description "
@@ -166,7 +163,7 @@ class ProductManager(BaseManager):
         cursor.execute(
             f"SELECT id, name, url, nutriscore, description "
             f"FROM {self.table} "
-            f"JOIN {models.Favorite.table}  "
+            f"JOIN {models.Favorite.table} "
             f"    ON {self.table}_id = id "
             f"WHERE substitute_id = %(id)s"
             f"{self._format_order_by(order_by)}"
@@ -241,8 +238,7 @@ class CategoryManager(BaseManager):
         cursor.close()
 
     def get_categories_by_product(self, product, order_by=None, limit=None):
-        """Retrieves all the categories associated with a product in the
-        database."""
+        """Retrieves in base all the categories associated with a product."""
         cursor = db.cursor()
         cursor.execute(
             f"SELECT id, name "
@@ -292,8 +288,7 @@ class ProductCategoryManager(BaseManager):
     """Manager responsible for managing the ProductCategory model."""
 
     def create_table(self):
-        """Creates the association table associated with the ProductCategory
-        model."""
+        """Creates the association table associated with the ProductCategory model."""
         cursor = db.cursor()
         cursor.execute(
             f"""CREATE TABLE IF NOT EXISTS {self.table} (
@@ -332,7 +327,7 @@ class ProductCategoryManager(BaseManager):
             self.create(product=product, category=category)
 
     def add_products_to_category(self, category, *products):
-        """Adds products to a category."""
+        """Ajoute des produits à une catégorie."""
         for product in products:
             self.create(product=product, category=category)
 
@@ -341,7 +336,7 @@ class StoreManager(BaseManager):
     """Manager responsible for managing the Store model."""
 
     def create_table(self):
-        """Creates the table associated with the Store model."""
+        """Crée la table associée au modèle Store."""
         cursor = db.cursor()
         cursor.execute(
             f"""CREATE TABLE IF NOT EXISTS {self.table} (
@@ -367,8 +362,7 @@ class StoreManager(BaseManager):
         cursor.close()
 
     def get_stores_by_product(self, product, order_by=None, limit=None):
-        """Retrieves all the stores associated with a product in the
-        database."""
+        """Retrieves all the stores associated with a product in the database."""
         cursor = db.cursor()
         cursor.execute(
             f"SELECT id, name "

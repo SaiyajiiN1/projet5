@@ -30,6 +30,7 @@ def transform_stores_into_list(product):
 
 def transform_field_names(product):
     transformations = {
+        "code": "id",
         "product_name": "name",
         "generic_name": "description",
         "nutriscore_grade": "nutriscore"

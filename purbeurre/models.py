@@ -197,7 +197,7 @@ class Favorite:
         )
 
     def get_product(self):
-        """Retrieves the product associated with the favorite.""""
+        """Retrieves the product associated with the favorite."""
         return Product.manager.get_by_id(self.product_id)
 
     def get_substitute(self):
